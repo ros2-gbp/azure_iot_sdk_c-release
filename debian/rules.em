@@ -21,6 +21,9 @@ export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
 # Solve shlibdeps errors in REP136 packages that use GNUInstallDirs:
 export DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
+# Build dynamic libraries
+DEB_CXXFLAGS_MAINT_APPEND += -DBUILD_AS_DYNAMIC=ON
+
 %:
 	dh $@@ -v --buildsystem=cmake
 
