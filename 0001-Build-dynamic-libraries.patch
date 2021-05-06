@@ -1,0 +1,26 @@
+From 4538358a5699860f4bceb36cc0470ffc19182103 Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Thu, 6 May 2021 07:27:06 +0200
+Subject: [PATCH] Build dynamic libraries
+
+---
+ debian/rules.em | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/debian/rules.em b/debian/rules.em
+index 3342408..63c560c 100755
+--- a/debian/rules.em
++++ b/debian/rules.em
+@@ -21,6 +21,9 @@ export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
+ # Solve shlibdeps errors in REP136 packages that use GNUInstallDirs:
+ export DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+ 
++# Build dynamic libraries
++DEB_CXXFLAGS_MAINT_APPEND += -DBUILD_AS_DYNAMIC=ON
++
+ %:
+ 	dh $@@ -v --buildsystem=cmake
+ 
+-- 
+2.25.1
+
