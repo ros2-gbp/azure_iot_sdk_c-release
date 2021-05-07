@@ -5,7 +5,6 @@
   <version>:{version}</version>
   <description>Azure IoT C SDKs and Libraries</description>
 
-  <maintainer email="opencode@microsoft.com"></maintainer>
   <maintainer email="tim.clephas@nobleo.nl">Tim Clephas</maintainer><!-- ROS Release -->
   <license>MIT</license>
 
