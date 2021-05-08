@@ -454,5 +454,3 @@ else()
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-# Install catkin package.xml
-install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
