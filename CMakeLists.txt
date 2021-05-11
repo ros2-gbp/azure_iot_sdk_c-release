@@ -419,3 +419,6 @@ if (${use_installed_dependencies})
             ${package_location}
     )
 endif()
+
+# Install catkin package.xml
+install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
