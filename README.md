@@ -1,3 +1,26 @@
+## azure-iot-sdk-c (melodic) - 1.7.0-2
+
+The packages in the `azure-iot-sdk-c` repository were released into the `melodic` distro by running `/usr/bin/bloom-release --rosdistro melodic --track melodic azure-iot-sdk-c` on `Tue, 11 May 2021 08:35:53 -0000`
+
+The `azure-iot-sdk-c` package was released.
+
+Version of package(s) in repository `azure-iot-sdk-c`:
+
+- upstream repository: https://github.com/Azure/azure-iot-sdk-c.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `1.7.0-1`
+- new version: `1.7.0-2`
+
+Versions of tools used:
+
+- bloom version: `0.10.7`
+- catkin_pkg version: `0.4.23`
+- rosdep version: `0.20.1`
+- rosdistro version: `0.8.3`
+- vcstools version: `0.1.42`
+
+
 ## azure-iot-sdk-c (melodic) - 1.7.0-1
 
 The packages in the `azure-iot-sdk-c` repository were released into the `melodic` distro by running `/usr/bin/bloom-release --rosdistro melodic --track melodic azure-iot-sdk-c` on `Tue, 11 May 2021 07:55:52 -0000`
