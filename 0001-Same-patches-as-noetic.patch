@@ -1,0 +1,37 @@
+From 21595a6cf6f627f4b703b6cc2d22dad84be4668e Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Tue, 11 May 2021 10:10:52 +0200
+Subject: [PATCH] Same patches as noetic
+
+---
+ CMakeLists.txt  | 2 ++
+ debian/rules.em | 3 +++
+ 2 files changed, 5 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 390a224..1c419f2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -454,3 +454,5 @@ else()
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+ endif()
+ 
++# Install catkin package.xml
++install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
+diff --git a/debian/rules.em b/debian/rules.em
+index 3342408..63c560c 100755
+--- a/debian/rules.em
++++ b/debian/rules.em
+@@ -21,6 +21,9 @@ export DEB_CXXFLAGS_MAINT_APPEND=-DNDEBUG
+ # Solve shlibdeps errors in REP136 packages that use GNUInstallDirs:
+ export DEB_HOST_MULTIARCH := $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+ 
++# Build dynamic libraries
++DEB_CXXFLAGS_MAINT_APPEND += -DBUILD_AS_DYNAMIC=ON
++
+ %:
+ 	dh $@@ -v --buildsystem=cmake
+ 
+-- 
+2.25.1
+
