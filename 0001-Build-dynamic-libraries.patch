@@ -1,4 +1,4 @@
-From ae1da42597e6dd8d9d5738a74dec7a61e2b61c09 Mon Sep 17 00:00:00 2001
+From 307059c5cd11037e34522ea9a79686e05ea65781 Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Thu, 6 May 2021 07:27:06 +0200
 Subject: [PATCH] Build dynamic libraries
