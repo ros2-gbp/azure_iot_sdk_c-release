@@ -1,4 +1,4 @@
-From 5ff26b942f2a6b61334d4e5b7a4eeaf999b4bd9f Mon Sep 17 00:00:00 2001
+From 8b73d9e7193651f519b8603f01647ae9799fd33d Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Thu, 6 May 2021 07:49:29 +0200
 Subject: [PATCH] Added install rule for package.xml
