@@ -1,0 +1,23 @@
+From b2b1b7c254b202aff1220f6488789ca966097a56 Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Mon, 24 Jan 2022 12:53:16 +0100
+Subject: [PATCH] Install ros package.xml
+
+---
+ CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b72bd41..d223ac4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -419,3 +419,6 @@ if (${use_installed_dependencies})
+             ${package_location}
+     )
+ endif()
++
++# Install ros package.xml
++install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
+-- 
+2.25.1
+
