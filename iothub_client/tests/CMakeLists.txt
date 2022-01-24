@@ -1,7 +1,7 @@
 #Copyright (c) Microsoft. All rights reserved.
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 
 if(${LINUX})
    add_definitions(-DAZIOT_LINUX)
@@ -63,7 +63,7 @@ add_unittest_directory(message_queue_ut)
 add_unittest_directory(iothubmoduleclient_ll_ut)
 add_unittest_directory(iothubmoduleclient_ut)
 
-if(${use_http} AND NOT (${use_wolfssl} OR ${use_bearssl}))
+if(${use_http} AND NOT (${use_wolfssl} OR ${use_bearssl} OR ${use_mbedtls}))
     add_unittest_directory(iothubtransporthttp_ut)
     add_e2etest_directory(iothubclient_http_e2e)
 endif()

@@ -97,6 +97,19 @@ rem no error checking
 
 pushd %build-root%\cmake\%CMAKE_DIR%
 
+echo ***checking msbuild***
+where /q msbuild
+IF ERRORLEVEL 1 (
+echo ***setting VC paths***
+    IF EXIST "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsMSBuildCmd.bat" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsMSBuildCmd.bat"
+)
+
+where msbuild
+IF ERRORLEVEL 1 (
+    echo [91mERROR: msbuild not found!!![0m 
+    goto :eof
+)
+
 if %MAKE_NUGET_PKG% == yes (
 	echo ***Running CMAKE for Win32 ***
 	cmake %build-root%
@@ -132,7 +145,7 @@ if %MAKE_NUGET_PKG% == yes (
 	if not !ERRORLEVEL!==0 exit /b !ERRORLEVEL!
 ) else (
 	echo ***Running CMAKE for Win64***
-	cmake %build-root% -G "Visual Studio 15 2017" -A x64 -Drun_unittests:bool=ON -Drun_int_tests=ON
+	cmake %build-root% -G "Visual Studio 15 2017" -A x64 -Drun_unittests:bool=ON -Drun_int_tests=ON -Duse_cppunittest=ON
 	if not !ERRORLEVEL!==0 exit /b !ERRORLEVEL!
 )
 
