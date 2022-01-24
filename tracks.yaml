@@ -18,7 +18,7 @@ tracks:
     last_release: LTS_01_2021_Ref01
     last_version: 1.7.0
     name: upstream
-    patches: melodic
+    patches: patches
     release_inc: '2'
     release_repo_url: null
     release_tag: :{ask}
@@ -45,7 +45,7 @@ tracks:
     last_release: LTS_01_2021_Ref01
     last_version: 1.8.0
     name: upstream
-    patches: noetic
+    patches: patches
     release_inc: '1'
     release_repo_url: null
     release_tag: :{ask}
