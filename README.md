@@ -1,3 +1,26 @@
+## azure-iot-sdk-c (galactic) - 1.9.0-2
+
+The packages in the `azure-iot-sdk-c` repository were released into the `galactic` distro by running `/usr/bin/bloom-release --rosdistro galactic --track galactic azure-iot-sdk-c` on `Mon, 24 Jan 2022 12:02:14 -0000`
+
+The `azure-iot-sdk-c` package was released.
+
+Version of package(s) in repository `azure-iot-sdk-c`:
+
+- upstream repository: https://github.com/Azure/azure-iot-sdk-c.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `1.9.0-1`
+- new version: `1.9.0-2`
+
+Versions of tools used:
+
+- bloom version: `0.10.7`
+- catkin_pkg version: `0.4.24`
+- rosdep version: `0.21.0`
+- rosdistro version: `0.8.3`
+- vcstools version: `0.1.42`
+
+
 ## azure-iot-sdk-c (galactic) - 1.9.0-1
 
 The packages in the `azure-iot-sdk-c` repository were released into the `galactic` distro by running `/usr/bin/bloom-release --rosdistro galactic --track galactic azure-iot-sdk-c` on `Mon, 24 Jan 2022 11:46:44 -0000`
