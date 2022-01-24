@@ -1,20 +1,22 @@
+From 1922055f6e2efbd2647cf15b5317bdb49b3ce16a Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Thu, 6 May 2021 07:49:29 +0200
+Subject: [PATCH] Added install rule for package.xml
+
+---
+ CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b72bd41ed..40eb80a41 100644
+index 228508d..a6d4965 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -141,7 +141,7 @@ if (${use_azure_cloud_rsa_cert})
+@@ -463,3 +463,5 @@ else()
+         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
  endif()
  
- if (${use_azure_cloud_ecc_cert})
--    add_definitions(-DUSE_AZURE_CLOUD_ECC_CERT) 
-+    add_definitions(-DUSE_AZURE_CLOUD_ECC_CERT)
- endif()
- 
- if (${use_microsoftazure_de_cert})
-@@ -419,3 +419,6 @@ if (${use_installed_dependencies})
-             ${package_location}
-     )
- endif()
-+
-++# Install catkin package.xml
-++install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
++# Install catkin package.xml
++install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
+-- 
+2.25.1
+
