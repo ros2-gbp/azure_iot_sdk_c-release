@@ -12,7 +12,6 @@
   <depend>curl</depend>
   <depend>libssl-dev</depend>
   <depend>uuid</depend>
-  <exec_depend>catkin</exec_depend>
 
   <export>
     <build_type>cmake</build_type>
