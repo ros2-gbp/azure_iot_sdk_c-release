@@ -10,15 +10,21 @@ jobs:
 - job: longhaul_linux
   timeoutInMinutes: 800
   variables:
-    _PREVIEW_VSTS_DOCKER_IMAGE: "aziotbld/linux-c-ubuntu"
+    _PREVIEW_VSTS_DOCKER_IMAGE: "aziotbld/linux-c-ubuntu-2004"
   pool: 
-    name: 'aziotbld-lin01'
-  displayName: 'longhaul_linux'
+    name: 'sdk-c--ubuntu-18'
+  displayName: 'Longhaul: Linux'
   steps:
   - script: |
+      sudo cat /etc/os-release
+      sudo apt show valgrind
+      sudo chmod --recursive ugo+rw cmake
       sudo chmod 755 jenkins/longhaul_c.sh
       sudo -E ./jenkins/longhaul_c.sh
-    displayName: 'build'
+    displayName: 'Build'
+  - script: |
+      cd cmake && sudo -E ../build_all/linux/run_tests.sh
+    displayName: 'Run Tests'
     env:
       IOTHUB_CONNECTION_STRING: $(IOTHUB-CONNECTION-STRING)
       IOTHUB_EVENTHUB_CONNECTION_STRING: $(IOTHUB-EVENTHUB-CONNECTION-STRING)
@@ -39,18 +45,19 @@ jobs:
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
       IOTHUB_LONGHAUL_TOTAL_DURATION_SECS: $(iotHubLonghaulTotalDurationSecs)
       IOTHUB_LONGHAUL_LOOP_DURATION_SECS: $(iotHubLonghaulLoopDurationSecs)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'cleanup'
-    condition: always()
 - job: longhaul_windows
   timeoutInMinutes: 800
   pool:
-    name: 'aziotbld-win10'
+    name: 'sdk-c--win-vs2017'
+  displayName: 'Longhaul: Windows'
   steps:
   - script: |
       call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat"
       call jenkins\longhaul_c.cmd
-    displayName: 'build'
+    displayName: 'Build'
+  - script: |
+        cd cmake && ctest -T test --no-compress-output -C "Debug" -V -j 16 --schedule-random
+    displayName: 'Run Tests'
     env:
       IOTHUB_CONNECTION_STRING: $(IOTHUB-CONNECTION-STRING)
       IOTHUB_EVENTHUB_CONNECTION_STRING: $(IOTHUB-EVENTHUB-CONNECTION-STRING)
@@ -68,6 +75,3 @@ jobs:
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
       IOTHUB_LONGHAUL_TOTAL_DURATION_SECS: $(iotHubLonghaulTotalDurationSecs)
       IOTHUB_LONGHAUL_LOOP_DURATION_SECS: $(iotHubLonghaulLoopDurationSecs)
-  - script: cd .. && rd /Q /S $(Agent.BuildDirectory)\s
-    displayName: 'cleanup'
-    condition: always() 
