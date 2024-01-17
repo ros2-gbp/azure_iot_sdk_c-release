@@ -145,7 +145,7 @@ typedef struct AMQP_TRANSPORT_DEVICE_INSTANCE_TAG
     bool subscribe_methods_needed;                                       // Indicates if should subscribe for device methods.
     // is the transport subscribed for methods?
     bool subscribed_for_methods;                                         // Indicates if device is subscribed for device methods.
-
+    bool is_quota_exceeded; 
     TRANSPORT_CALLBACKS_INFO transport_callbacks;
     void* transport_ctx;
 } AMQP_TRANSPORT_DEVICE_INSTANCE;
@@ -157,6 +157,7 @@ typedef struct AMQP_TRANSPORT_DEVICE_TWIN_CONTEXT_TAG
     uint32_t item_id;
     TRANSPORT_CALLBACKS_INFO transport_callbacks;
     void* transport_ctx;
+    AMQP_TRANSPORT_DEVICE_INSTANCE* device;
 } AMQP_TRANSPORT_DEVICE_TWIN_CONTEXT;
 
 typedef struct AMQP_TRANSPORT_GET_TWIN_CONTEXT_TAG
@@ -291,6 +292,10 @@ static void on_device_state_changed_callback(void* context, DEVICE_STATE previou
                 registered_device->transport_instance->state == AMQP_TRANSPORT_STATE_BEING_DESTROYED)
             {
                 registered_device->transport_callbacks.connection_status_cb(IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED, IOTHUB_CLIENT_CONNECTION_OK, registered_device->transport_ctx);
+            }
+            else if (registered_device->is_quota_exceeded)
+            {
+                registered_device->transport_callbacks.connection_status_cb(IOTHUB_CLIENT_CONNECTION_UNAUTHENTICATED, IOTHUB_CLIENT_CONNECTION_QUOTA_EXCEEDED, registered_device->transport_ctx);
             }
         }
         else if (new_state == DEVICE_STATE_ERROR_AUTH)
@@ -438,6 +443,8 @@ static DEVICE_MESSAGE_DISPOSITION_RESULT on_message_received(IOTHUB_MESSAGE_HAND
         {
             device_disposition_result = DEVICE_MESSAGE_DISPOSITION_RESULT_NONE;
         }
+
+        amqp_device_instance->number_of_previous_failures = 0;
     }
 
     return device_disposition_result;
@@ -468,6 +475,7 @@ static int on_method_request_received(void* context, const char* method_name, co
     }
     else
     {
+        device_state->number_of_previous_failures = 0;
         result = 0;
     }
     return result;
@@ -516,8 +524,12 @@ static void on_device_send_twin_update_complete_callback(DEVICE_TWIN_UPDATE_RESU
     else
     {
         AMQP_TRANSPORT_DEVICE_TWIN_CONTEXT* dev_twin_ctx = (AMQP_TRANSPORT_DEVICE_TWIN_CONTEXT*)context;
-
         dev_twin_ctx->transport_callbacks.twin_rpt_state_complete_cb(dev_twin_ctx->item_id, status_code, dev_twin_ctx->transport_ctx);
+
+        if (status_code >= 200 && status_code < 300)
+        {
+            dev_twin_ctx->device->number_of_previous_failures = 0;
+        }
 
         free(dev_twin_ctx);
     }
@@ -535,6 +547,8 @@ static void on_device_twin_update_received_callback(DEVICE_TWIN_UPDATE_TYPE upda
 
         registered_device->transport_instance->transport_callbacks.twin_retrieve_prop_complete_cb((update_type == DEVICE_TWIN_UPDATE_TYPE_COMPLETE ? DEVICE_TWIN_UPDATE_COMPLETE : DEVICE_TWIN_UPDATE_PARTIAL),
                 message, length, registered_device->transport_instance->transport_ctx);
+
+        registered_device->number_of_previous_failures = 0;
     }
 }
 
@@ -807,6 +821,7 @@ static void prepare_device_for_connection_retry(AMQP_TRANSPORT_DEVICE_INSTANCE* 
 
     registered_device->number_of_previous_failures = 0;
     registered_device->number_of_send_event_complete_failures = 0;
+    registered_device->is_quota_exceeded = false;
 }
 
 void prepare_for_connection_retry(AMQP_TRANSPORT_INSTANCE* transport_instance)
@@ -943,6 +958,12 @@ static void on_event_send_complete(IOTHUB_MESSAGE_LIST* message, D2C_EVENT_SEND_
     else
     {
         registered_device->number_of_send_event_complete_failures = 0;
+        registered_device->number_of_previous_failures = 0;
+    }
+
+    if (result == D2C_EVENT_SEND_COMPLETE_RESULT_ERROR_QUOTA_EXCEEDED)
+    {
+        registered_device->is_quota_exceeded = true;
     }
 
     if (message->callback != NULL)
@@ -1080,7 +1101,6 @@ static int IoTHubTransport_AMQP_Common_Device_DoWork(AMQP_TRANSPORT_DEVICE_INSTA
         }
         else
         {
-            registered_device->number_of_previous_failures = 0;
             result = RESULT_OK;
         }
     }
@@ -1354,6 +1374,7 @@ IOTHUB_PROCESS_ITEM_RESULT IoTHubTransport_AMQP_Common_ProcessItem(TRANSPORT_LL_
                 dev_twin_ctx->transport_callbacks = transport_instance->transport_callbacks;
                 dev_twin_ctx->transport_ctx = transport_instance->transport_ctx;
                 dev_twin_ctx->item_id = iothub_item->device_twin->item_id;
+                dev_twin_ctx->device = registered_device;
 
                 if (amqp_device_send_twin_update_async(
                     registered_device->device_handle,
@@ -2040,6 +2061,7 @@ IOTHUB_DEVICE_HANDLE IoTHubTransport_AMQP_Common_Register(TRANSPORT_LL_HANDLE ha
                 amqp_device_instance->max_state_change_timeout_secs = DEFAULT_DEVICE_STATE_CHANGE_TIMEOUT_SECS;
                 amqp_device_instance->subscribe_methods_needed = false;
                 amqp_device_instance->subscribed_for_methods = false;
+                amqp_device_instance->is_quota_exceeded = false;  
                 amqp_device_instance->transport_ctx = transport_instance->transport_ctx;
                 amqp_device_instance->transport_callbacks = transport_instance->transport_callbacks;
 

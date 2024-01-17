@@ -180,7 +180,7 @@ static void on_cbs_put_token_complete_callback(void* context, CBS_OPERATION_RESU
     }
     else
     {
-        LogError("CBS reported status code %u, error: '%s' for put-token operation for device '%s'", status_code, status_description, instance->device_id);
+        LogError("CBS reported status code %u, error: '%s' for put-token operation for device '%s'", status_code, status_description != NULL ? status_description : "", instance->device_id);
 
         update_state(instance, AUTHENTICATION_STATE_ERROR);
 
@@ -267,31 +267,15 @@ static int create_and_put_SAS_token_to_cbs(AUTHENTICATION_INSTANCE* instance)
         }
         else if (cred_type == IOTHUB_CREDENTIAL_TYPE_SAS_TOKEN)
         {
-            SAS_TOKEN_STATUS token_status = IoTHubClient_Auth_Is_SasToken_Valid(instance->authorization_module);
-            if (token_status == SAS_TOKEN_STATUS_INVALID)
+            sas_token = IoTHubClient_Auth_Get_SasToken(instance->authorization_module, NULL, 0, NULL);
+            if (sas_token == NULL)
             {
-                LogError("sas token is invalid.");
-                sas_token = NULL;
-                result = MU_FAILURE;
-            }
-            else if (token_status == SAS_TOKEN_STATUS_FAILED)
-            {
-                LogError("testing Sas Token failed.");
-                sas_token = NULL;
+                LogError("Failure getting SAS token.");
                 result = MU_FAILURE;
             }
             else
             {
-                sas_token = IoTHubClient_Auth_Get_SasToken(instance->authorization_module, NULL, 0, NULL);
-                if (sas_token == NULL)
-                {
-                    LogError("failure getting sas Token.");
-                    result = MU_FAILURE;
-                }
-                else
-                {
-                    result = RESULT_OK;
-                }
+                result = RESULT_OK;
             }
         }
         else if (cred_type == IOTHUB_CREDENTIAL_TYPE_X509 || cred_type == IOTHUB_CREDENTIAL_TYPE_X509_ECC)

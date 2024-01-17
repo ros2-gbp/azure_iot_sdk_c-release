@@ -47,6 +47,10 @@ static void my_gballoc_free(void* s)
 #undef malloc
 #endif
 
+#define TEST_HTTPAPIEX_HANDLE   (HTTPAPIEX_HANDLE)0x4343;
+#define HTTP_OK                 200
+#define HTTP_NOT_FOUND          404
+
 TEST_DEFINE_ENUM_TYPE(HTTPAPI_REQUEST_TYPE, HTTPAPI_REQUEST_TYPE_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(HTTPAPI_REQUEST_TYPE, HTTPAPI_REQUEST_TYPE_VALUES);
 
@@ -129,10 +133,16 @@ static void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 }
 
 static BUFFER_HANDLE testValidBufferHandle; /*assigned in TEST_SUITE_INITIALIZE*/
-static unsigned int httpResponse; /*used as out parameter in every call to Blob_....*/
-static const unsigned int TwoHundred = 200;
-static const unsigned int FourHundredFour = 404;
+static const unsigned int TwoHundred = HTTP_OK;
+static const unsigned int FourHundredFour = HTTP_NOT_FOUND;
 
+// Allocate test content during initial test setup only.  This buffer is very large,
+// which means significant performance degradation on Valgrind tests if we were to
+// allocate and free it per individual test-case.
+static unsigned char * testUploadToBlobContent;
+// Maximum size a test blob can be.  This is large (!), but needs of underlying
+// test to verify that large buffers are properly chunked end up with this.
+static const size_t testUploadToBlobContentMaxSize = 256 * 1024 * 1024;
 
 /**
  * BLOB_UPLOAD_CONTEXT and FileUpload_GetData_Callback
@@ -285,6 +295,10 @@ TEST_SUITE_INITIALIZE(TestSuiteInitialize)
 
     testValidBufferHandle = BUFFER_create((const unsigned char*)"a", 1);
     ASSERT_IS_NOT_NULL(testValidBufferHandle);
+
+    testUploadToBlobContent = gballoc_malloc(testUploadToBlobContentMaxSize);
+    ASSERT_IS_NOT_NULL(testUploadToBlobContent);
+
     umock_c_reset_all_calls();
 }
 
@@ -292,6 +306,7 @@ TEST_SUITE_CLEANUP(TestClassCleanup)
 {
 
     BUFFER_delete(testValidBufferHandle);
+    gballoc_free(testUploadToBlobContent);
 
     umock_c_deinit();
 }
@@ -325,6 +340,7 @@ TEST_FUNCTION_CLEANUP(Cleanup)
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_with_NULL_SasUri_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
 
     ///act
     BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri(NULL, FileUpload_GetData_Callback, &context, &httpResponse, testValidBufferHandle, NULL, NULL, NULL);
@@ -339,6 +355,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_with_NULL_SasUri_fails)
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_with_NULL_getDataCallBack_and_non_NULL_context_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
 
     ///act
     BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri(TEST_VALID_SASURI_1, NULL, &context, &httpResponse, testValidBufferHandle, NULL, NULL, NULL);
@@ -353,6 +370,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_with_NULL_getDataCallBack_and_
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_succeeds_when_HTTP_status_code_is_404)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     size_t size = 1;
     context.size = size;
@@ -394,7 +412,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_succeeds_when_HTTP_status_code
         STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG)) /*this is getting the relative path as const char* */
             .IgnoreArgument_handle();
 
-        int responseCode = 404; /*not found*/
+        int responseCode = HTTP_NOT_FOUND; /*not found*/
         STRICT_EXPECTED_CALL(HTTPAPIEX_ExecuteRequest(IGNORED_PTR_ARG, HTTPAPI_REQUEST_PUT, IGNORED_PTR_ARG, NULL, IGNORED_PTR_ARG, &httpResponse, NULL, testValidBufferHandle))
             .IgnoreArgument_handle()
             .IgnoreArgument_relativePath()
@@ -416,6 +434,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_succeeds_when_HTTP_status_code
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
+    ASSERT_ARE_EQUAL(int, HTTP_NOT_FOUND, httpResponse);
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
     ///cleanup
@@ -424,6 +443,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_succeeds_when_HTTP_status_code
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_HTTPAPIEX_ExecuteRequest_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     size_t size = 1;
     context.size = size;
@@ -465,7 +485,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_HTTPAPIEX_ExecuteRe
         STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG)) /*this is getting the relative path as const char* */
             .IgnoreArgument_handle();
 
-        int responseCode = 200; /*ok*/
+        int responseCode = HTTP_OK; /*ok*/
         STRICT_EXPECTED_CALL(HTTPAPIEX_ExecuteRequest(IGNORED_PTR_ARG, HTTPAPI_REQUEST_PUT, IGNORED_PTR_ARG, NULL, IGNORED_PTR_ARG, &httpResponse, NULL, testValidBufferHandle))
             .IgnoreArgument_handle()
             .IgnoreArgument_relativePath()
@@ -497,6 +517,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_HTTPAPIEX_ExecuteRe
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_BUFFER_create_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     context.size = 1;
     context.source = &c;
@@ -528,6 +549,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_BUFFER_create_fails
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_HTTPAPIEX_Create_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     context.size = 1;
     context.source = &c;
@@ -555,6 +577,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_HTTPAPIEX_Create_fa
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_malloc_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     context.size = 1;
     context.source = &c;
@@ -579,6 +602,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_fails_when_malloc_fails)
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_SasUri_is_wrong_fails_1)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     context.size = 1;
     context.source = &c;
@@ -599,6 +623,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_SasUri_is_wrong_fails_1)
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_SasUri_is_wrong_fails_2)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     unsigned char c = '3';
     context.size = 1;
     context.source = &c;
@@ -616,46 +641,32 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_SasUri_is_wrong_fails_2)
     ///cleanup
 }
 
-static void Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(HTTP_PROXY_OPTIONS *proxyOptions, const char * networkInterface)
+static void Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(HTTP_PROXY_OPTIONS *proxyOptions, const char * networkInterface, const char* certificate, size_t* blockSizesToTest, size_t numberBlockSizesToTest)
 {
-    /*the following sizes have been identified as "important to be tested*/
-    /*1B, 100MB-1, 100MB, 100MB+1, 256MB, 256MB+1, 260MB-1, 260MB, 260MB+1*/
-    size_t sizes[] = {
-        1,
-
-        100 * 1024 * 1024 - 1,
-        100 * 1024 * 1024,
-        100 * 1024 * 1024 + 1,
-
-        256 * 1024 * 1024 - 1,
-        256 * 1024 * 1024,
-        256 * 1024 * 1024 + 1,
-
-        260 * 1024 * 1024 - 1,
-        260 * 1024 * 1024,
-        260 * 1024 * 1024 + 1,
-    };
-
-    for (size_t iSize = 0; iSize < sizeof(sizes) / sizeof(sizes[0]);iSize++)
+    unsigned int httpResponse = HTTP_OK;
+    for (size_t iSize = 0; iSize < numberBlockSizesToTest; iSize++)
     {
         umock_c_reset_all_calls();
         ///arrange
-        unsigned char * content = (unsigned char*)gballoc_malloc(sizes[iSize]);
-        ASSERT_IS_NOT_NULL(content);
-
         umock_c_reset_all_calls();
 
-        memset(content, '3', sizes[iSize]);
-        content[0] = '0';
-        content[sizes[iSize] - 1] = '4';
-        context.size = sizes[iSize];
-        context.source = content;
+        memset(testUploadToBlobContent, '3', blockSizesToTest[iSize]);
+        testUploadToBlobContent[0] = '0';
+        testUploadToBlobContent[blockSizesToTest[iSize] - 1] = '4';
+        context.size = blockSizesToTest[iSize];
+        context.source = testUploadToBlobContent;
         context.toUpload = context.size;
 
         STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_NUM_ARG)) /*this is creating a copy of the hostname */
             .IgnoreArgument_size();
 
         STRICT_EXPECTED_CALL(HTTPAPIEX_Create("h.h")); /*this is creating the httpapiex handle to storage (it is always the same host)*/
+
+        if (certificate != NULL)
+        {
+            STRICT_EXPECTED_CALL(HTTPAPIEX_SetOption(IGNORED_PTR_ARG, "TrustedCerts", IGNORED_PTR_ARG));
+        }
+        
         if (proxyOptions != NULL)
         {
             STRICT_EXPECTED_CALL(HTTPAPIEX_SetOption(IGNORED_PTR_ARG, OPTION_HTTP_PROXY, proxyOptions));
@@ -668,10 +679,10 @@ static void Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(HT
         STRICT_EXPECTED_CALL(STRING_construct("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<BlockList>")); /*this is starting to build the XML used in Put Block List operation*/
 
         /*uploading blocks (Put Block)*/
-        for (size_t blockNumber = 0;blockNumber < (sizes[iSize] - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
+        for (size_t blockNumber = 0; blockNumber < (blockSizesToTest[iSize] - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
         {
-            STRICT_EXPECTED_CALL(BUFFER_create(content + blockNumber * 100 * 1024 * 1024,
-                (blockNumber != (sizes[iSize] - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (sizes[iSize] - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
+            STRICT_EXPECTED_CALL(BUFFER_create(testUploadToBlobContent + blockNumber * 100 * 1024 * 1024,
+                (blockNumber != (blockSizesToTest[iSize] - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (blockSizesToTest[iSize] - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
             )); /*this is the content to be uploaded by this call*/
 
             /*here some sprintf happens and that produces a string in the form: 000000...049999*/
@@ -749,14 +760,12 @@ static void Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(HT
         set_expected_calls_for_Blob_UploadMultipleBlocksFromSasUri_cleanup();
 
         ///act
-        BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri("https://h.h/something?a=b", FileUpload_GetData_Callback, &context, &httpResponse, testValidBufferHandle, NULL, proxyOptions, networkInterface);
+        BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri("https://h.h/something?a=b", FileUpload_GetData_Callback, &context, &httpResponse, testValidBufferHandle, certificate, proxyOptions, networkInterface);
 
         ///assert
         ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
         ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
-
-        ///cleanup
-        gballoc_free(content);
+        ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
     }
 
 
@@ -766,175 +775,50 @@ static void Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(HT
 TEST_FUNCTION(Blob_UploadFromSasUri_with_proxy_happy_path)
 {
     HTTP_PROXY_OPTIONS proxyOptions = { "a", 8888, NULL, NULL };
-    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(&proxyOptions, NULL);
+    size_t blockSizesToTest[] = { 100 * 1024 * 1024 };
+    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(&proxyOptions, NULL, NULL, blockSizesToTest, sizeof(blockSizesToTest) / sizeof(blockSizesToTest[0]));
 }
-
-
-TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path)
-{
-    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(NULL, NULL);
-}
-
 
 TEST_FUNCTION(Blob_UploadFromSasUri_with_network_interface)
 {
     const char* networkInterface = "eth0";
-    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(NULL, networkInterface);
+    size_t blockSizesToTest[] = { 100 * 1024 * 1024 };
+    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(NULL, networkInterface, NULL, blockSizesToTest, sizeof(blockSizesToTest) / sizeof(blockSizesToTest[0]));
 }
 
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_various_sizes_with_certificates_happy_path)
 {
-    /*the following sizes have been identified as "important to be tested*/
-    /*1B, 100MB-1, 100MB, 100MB+1, 256MB, 256MB+1, 260MB-1, 260MB, 260MB+1*/
-    size_t sizes[] = {
-        1,
+    const char* certificate = "testCertificate";
+    size_t blockSizesToTest[] = { 100 * 1024 * 1024 };
+    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(NULL, NULL, certificate, blockSizesToTest, sizeof(blockSizesToTest) / sizeof(blockSizesToTest[0]));
+}
 
+TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path)
+{
+    size_t blockSizesToTest[] = {
+        1,
         100 * 1024 * 1024 - 1,
         100 * 1024 * 1024,
         100 * 1024 * 1024 + 1,
-
         256 * 1024 * 1024 - 1,
-        256 * 1024 * 1024,
-        256 * 1024 * 1024 + 1,
-
-        260 * 1024 * 1024 - 1,
-        260 * 1024 * 1024,
-        260 * 1024 * 1024 + 1,
     };
-
-    for (size_t iSize = 0; iSize < sizeof(sizes) / sizeof(sizes[0]);iSize++)
-    {
-        umock_c_reset_all_calls();
-        ///arrange
-        unsigned char * content = (unsigned char*)gballoc_malloc(sizes[iSize]);
-        ASSERT_IS_NOT_NULL(content);
-
-        umock_c_reset_all_calls();
-
-        memset(content, '3', sizes[iSize]);
-        content[0] = '0';
-        content[sizes[iSize] - 1] = '4';
-        context.size = sizes[iSize];
-        context.source = content;
-        context.toUpload = context.size;
-
-        STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_NUM_ARG)) /*this is creating a copy of the hostname */
-            .IgnoreArgument_size();
-
-        STRICT_EXPECTED_CALL(HTTPAPIEX_Create("h.h")); /*this is creating the httpapiex handle to storage (it is always the same host)*/
-        STRICT_EXPECTED_CALL(HTTPAPIEX_SetOption(IGNORED_PTR_ARG, "TrustedCerts", IGNORED_PTR_ARG));
-        STRICT_EXPECTED_CALL(STRING_construct("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<BlockList>")); /*this is starting to build the XML used in Put Block List operation*/
-
-                                                                                                             /*uploading blocks (Put Block)*/
-        for (size_t blockNumber = 0;blockNumber < (sizes[iSize] - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
-        {
-            STRICT_EXPECTED_CALL(BUFFER_create(content + blockNumber * 100 * 1024 * 1024,
-                (blockNumber != (sizes[iSize] - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (sizes[iSize] - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
-            )); /*this is the content to be uploaded by this call*/
-
-            /*here some sprintf happens and that produces a string in the form: 000000...049999*/
-            STRICT_EXPECTED_CALL(Azure_Base64_Encode_Bytes(IGNORED_PTR_ARG, 6)) /*this is converting the produced blockID string to a base64 representation*/
-                .IgnoreArgument_source();
-
-            STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, "<Latest>")) /*this is building the XML*/
-                .IgnoreArgument_handle();
-            STRICT_EXPECTED_CALL(STRING_concat_with_STRING(IGNORED_PTR_ARG, IGNORED_PTR_ARG)) /*this is building the XML*/
-                .IgnoreArgument_s1()
-                .IgnoreArgument_s2();
-            STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, "</Latest>")) /*this is building the XML*/
-                .IgnoreArgument_handle();
-            STRICT_EXPECTED_CALL(STRING_construct("/something?a=b")); /*this is building the relativePath*/
-
-            STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, "&comp=block&blockid=")) /*this is building the relativePath*/
-                .IgnoreArgument_handle();
-            STRICT_EXPECTED_CALL(STRING_concat_with_STRING(IGNORED_PTR_ARG, IGNORED_PTR_ARG)) /*this is building the relativePath by adding the blockId (base64 encoded_*/
-                .IgnoreArgument_s1()
-                .IgnoreArgument_s2();
-
-            STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG)) /*this is getting the relative path as const char* */
-                .IgnoreArgument_handle();
-
-            STRICT_EXPECTED_CALL(HTTPAPIEX_ExecuteRequest(IGNORED_PTR_ARG, HTTPAPI_REQUEST_PUT, IGNORED_PTR_ARG, NULL, IGNORED_PTR_ARG, &httpResponse, NULL, testValidBufferHandle))
-                .IgnoreArgument_handle()
-                .IgnoreArgument_relativePath()
-                .IgnoreArgument_requestContent();
-
-            STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG)) /*this is unbuilding the relativePath*/
-                .IgnoreArgument_handle();
-            STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG)) /*this is unbuilding the blockID string to a base64 representation*/
-                .IgnoreArgument_handle();
-            STRICT_EXPECTED_CALL(BUFFER_delete(IGNORED_PTR_ARG)) /*this was the content to be uploaded*/
-                .IgnoreArgument_handle();
-        }
-
-        /*this part is Put Block list*/
-        STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, "</BlockList>")) /*This is closing the XML*/
-            .IgnoreArgument_handle();
-        STRICT_EXPECTED_CALL(STRING_construct("/something?a=b")); /*this is building the relative path for the Put BLock list*/
-
-        STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, "&comp=blocklist")) /*This is still building relative path for Put Block list*/
-            .IgnoreArgument_handle();
-
-        STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG)) /*this is getting the XML as const char* so it can be passed to _ExecuteRequest*/
-            .IgnoreArgument_handle();
-
-        STRICT_EXPECTED_CALL(BUFFER_create(IGNORED_PTR_ARG, IGNORED_NUM_ARG)) /*this is creating the XML body as BUFFER_HANDLE*/
-            .IgnoreAllArguments();
-
-        STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG)) /*this is getting the relative path*/
-            .IgnoreArgument_handle();
-
-        STRICT_EXPECTED_CALL(HTTPAPIEX_ExecuteRequest(
-            IGNORED_PTR_ARG,
-            HTTPAPI_REQUEST_PUT,
-            IGNORED_PTR_ARG,
-            NULL,
-            IGNORED_PTR_ARG,
-            &httpResponse,
-            NULL,
-            testValidBufferHandle
-        ))
-            .IgnoreArgument_handle()
-            .IgnoreArgument_relativePath()
-            .IgnoreArgument_requestContent()
-            .CopyOutArgumentBuffer_statusCode(&TwoHundred, sizeof(TwoHundred))
-            ;
-
-        STRICT_EXPECTED_CALL(BUFFER_delete(IGNORED_PTR_ARG)) /*This is the XML as BUFFER_HANDLE*/
-            .IgnoreArgument_handle();
-        STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG)) /*this is destroying the relative path for Put Block List*/
-            .IgnoreArgument_handle();
-        set_expected_calls_for_Blob_UploadMultipleBlocksFromSasUri_cleanup();
-
-        ///act
-        BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri("https://h.h/something?a=b", FileUpload_GetData_Callback, &context, &httpResponse, testValidBufferHandle, "a", NULL, NULL);
-
-        ///assert
-        ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
-        ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
-
-        ///cleanup
-        gballoc_free(content);
-    }
+    Blob_UploadMultipleBlocksFromSasUri_various_sizes_happy_path_Impl(NULL, NULL, NULL, blockSizesToTest, sizeof(blockSizesToTest) / sizeof(blockSizesToTest[0]));
 }
 
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_unhappy_paths)
 {
-    size_t size = 256 * 1024 * 1024;
+    unsigned int httpResponse = HTTP_OK;
     (void)umock_c_negative_tests_init();
 
     umock_c_reset_all_calls();
     ///arrange
-    unsigned char * content = (unsigned char*)gballoc_malloc(size);
-    ASSERT_IS_NOT_NULL(content);
-
     umock_c_reset_all_calls();
 
-    memset(content, '3', size);
-    content[0] = '0';
-    content[size - 1] = '4';
-    context.size = size;
-    context.source = content;
+    memset(testUploadToBlobContent, '3', testUploadToBlobContentMaxSize);
+    testUploadToBlobContent[0] = '0';
+    testUploadToBlobContent[testUploadToBlobContentMaxSize - 1] = '4';
+    context.size = testUploadToBlobContentMaxSize;
+    context.source = testUploadToBlobContent;
     context.toUpload = context.size;
 
     STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_NUM_ARG)) /*this is creating a copy of the hostname */
@@ -944,10 +828,10 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_unhappy_paths)
     STRICT_EXPECTED_CALL(STRING_construct("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<BlockList>")); /*this is starting to build the XML used in Put Block List operation*/
 
     /*uploading blocks (Put Block)*/
-    for (size_t blockNumber = 0;blockNumber < (size - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
+    for (size_t blockNumber = 0;blockNumber < (testUploadToBlobContentMaxSize - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
     {
-        STRICT_EXPECTED_CALL(BUFFER_create(content + blockNumber * 100 * 1024 * 1024,
-            (blockNumber != (size - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (size - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
+        STRICT_EXPECTED_CALL(BUFFER_create(testUploadToBlobContent + blockNumber * 100 * 1024 * 1024,
+            (blockNumber != (testUploadToBlobContentMaxSize - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (testUploadToBlobContentMaxSize - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
         )); /*this is the content to be uploaded by this call*/
 
         /*here some sprintf happens and that produces a string in the form: 000000...049999*/
@@ -1048,35 +932,28 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_unhappy_paths)
 
             ///assert
             ASSERT_ARE_NOT_EQUAL(BLOB_RESULT, BLOB_OK, result, temp_str);
+            ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
         }
     }
 
     umock_c_negative_tests_deinit();
-
-    ///cleanup
-    gballoc_free(content);
-
 }
 
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_with_certificate_and_network_interface_unhappy_paths)
 {
-    size_t size = 256 * 1024 * 1024;
+    unsigned int httpResponse = HTTP_OK;
 
     (void)umock_c_negative_tests_init();
 
-
     umock_c_reset_all_calls();
     ///arrange
-    unsigned char * content = (unsigned char*)gballoc_malloc(size);
-    ASSERT_IS_NOT_NULL(content);
-
     umock_c_reset_all_calls();
 
-    memset(content, '3', size);
-    content[0] = '0';
-    content[size - 1] = '4';
-    context.size = size;
-    context.source = content;
+    memset(testUploadToBlobContent, '3', testUploadToBlobContentMaxSize);
+    testUploadToBlobContent[0] = '0';
+    testUploadToBlobContent[testUploadToBlobContentMaxSize - 1] = '4';
+    context.size = testUploadToBlobContentMaxSize;
+    context.source = testUploadToBlobContent;
     context.toUpload = context.size;
 
     STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_NUM_ARG)) /*this is creating a copy of the hostname */
@@ -1088,10 +965,10 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_with_certificate_and_netw
     STRICT_EXPECTED_CALL(STRING_construct("<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<BlockList>")); /*this is starting to build the XML used in Put Block List operation*/
 
                                                                                                          /*uploading blocks (Put Block)*/
-    for (size_t blockNumber = 0;blockNumber < (size - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
+    for (size_t blockNumber = 0;blockNumber < (testUploadToBlobContentMaxSize - 1) / (100 * 1024 * 1024) + 1;blockNumber++)
     {
-        STRICT_EXPECTED_CALL(BUFFER_create(content + blockNumber * 100 * 1024 * 1024,
-            (blockNumber != (size - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (size - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
+        STRICT_EXPECTED_CALL(BUFFER_create(testUploadToBlobContent + blockNumber * 100 * 1024 * 1024,
+            (blockNumber != (testUploadToBlobContentMaxSize - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (testUploadToBlobContentMaxSize - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
         )); /*this is the content to be uploaded by this call*/
 
         /*here some sprintf happens and that produces a string in the form: 000000...049999*/
@@ -1193,31 +1070,24 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_64MB_with_certificate_and_netw
 
             ///assert
             ASSERT_ARE_NOT_EQUAL(BLOB_RESULT, BLOB_OK, result, temp_str);
+            ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
         }
     }
 
     umock_c_negative_tests_deinit();
-
-    ///cleanup
-    gballoc_free(content);
-
 }
 
 TEST_FUNCTION(Blob_UploadFromSasUri_when_http_code_is_404_it_immediately_succeeds)
 {
-    size_t size = 256 * 1024 * 1024;
-
     ///arrange
-    unsigned char * content = (unsigned char*)gballoc_malloc(size);
-    ASSERT_IS_NOT_NULL(content);
-
+    unsigned int httpResponse = HTTP_OK;
     umock_c_reset_all_calls();
 
-    memset(content, '3', size);
-    content[0] = '0';
-    content[size - 1] = '4';
-    context.size = size;
-    context.source = content;
+    memset(testUploadToBlobContent, '3', testUploadToBlobContentMaxSize);
+    testUploadToBlobContent[0] = '0';
+    testUploadToBlobContent[testUploadToBlobContentMaxSize - 1] = '4';
+    context.size = testUploadToBlobContentMaxSize;
+    context.source = testUploadToBlobContent;
     context.toUpload = context.size;
 
     STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_NUM_ARG)) /*this is creating a copy of the hostname */
@@ -1229,8 +1099,8 @@ TEST_FUNCTION(Blob_UploadFromSasUri_when_http_code_is_404_it_immediately_succeed
     /*uploading blocks (Put Block)*/ /*this simply fails first block*/
     size_t blockNumber = 0;
     {
-        STRICT_EXPECTED_CALL(BUFFER_create(content + blockNumber * 100 * 1024 * 1024,
-            (blockNumber != (size - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (size - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
+        STRICT_EXPECTED_CALL(BUFFER_create(testUploadToBlobContent + blockNumber * 100 * 1024 * 1024,
+            (blockNumber != (testUploadToBlobContentMaxSize - 1) / (100 * 1024 * 1024)) ? 100 * 1024 * 1024 : (testUploadToBlobContentMaxSize - 1) % (100 * 1024 * 1024) + 1 /*condition to take care of "the size of the last block*/
         )); /*this is the content to be uploaded by this call*/
 
         /*here some sprintf happens and that produces a string in the form: 000000...049999*/
@@ -1280,15 +1150,13 @@ TEST_FUNCTION(Blob_UploadFromSasUri_when_http_code_is_404_it_immediately_succeed
     ///assert
     ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
-
-    ///cleanup
-    gballoc_free(content);
-
+    ASSERT_ARE_EQUAL(int, HTTP_NOT_FOUND, httpResponse);
 }
 
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_too_big_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = BLOCK_SIZE + 1;
@@ -1301,6 +1169,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_too_big_fails)
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_INVALID_ARG, result);
+    ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
 
     ///cleanup
     gballoc_free(fakeContext.fakeData);
@@ -1309,6 +1178,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_too_big_fails)
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_is_4MB_succeeds)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = BLOCK_SIZE;
@@ -1321,6 +1191,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_is_4MB_succeeds
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
+    ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
 
     ///cleanup
     gballoc_free(fakeContext.fakeData);
@@ -1329,6 +1200,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockSize_is_4MB_succeeds
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_maximum_succeeds)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = 1;
@@ -1341,6 +1213,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_maximum_suc
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
+    ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
 
     ///cleanup
     gballoc_free(fakeContext.fakeData);
@@ -1349,6 +1222,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_maximum_suc
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_one_over_maximum_fails)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = 1;
@@ -1361,6 +1235,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_one_over_ma
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_INVALID_ARG, result);
+    ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
 
     ///cleanup
     gballoc_free(fakeContext.fakeData);
@@ -1369,6 +1244,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_when_blockCount_is_one_over_ma
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_returns_BLOB_ABORTED_when_callback_aborts_immediately)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = 1;
@@ -1389,6 +1265,7 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_returns_BLOB_ABORTED_when_call
 TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_returns_BLOB_ABORTED_when_callback_aborts_after_5_blocks)
 {
     ///arrange
+    unsigned int httpResponse = HTTP_OK;
     BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
     fakeContext.blockSent = 0;
     fakeContext.blockSize = 1;
@@ -1401,6 +1278,28 @@ TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_returns_BLOB_ABORTED_when_call
 
     ///assert
     ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_ABORTED, result);
+
+    ///cleanup
+    gballoc_free(fakeContext.fakeData);
+}
+
+TEST_FUNCTION(Blob_UploadMultipleBlocksFromSasUri_with_empty_payload)
+{
+    ///arrange
+    unsigned int httpResponse = HTTP_OK;
+    BLOB_UPLOAD_CONTEXT_FAKE fakeContext;
+    fakeContext.blockSent = 0;
+    fakeContext.blockSize = 1;
+    fakeContext.blocksCount = 0;
+    fakeContext.fakeData = NULL;
+    fakeContext.abortOnBlockNumber = 5;
+
+    ///act
+    BLOB_RESULT result = Blob_UploadMultipleBlocksFromSasUri("https://h.h/something?a=b", FileUpload_GetFakeData_Callback, &fakeContext, &httpResponse, testValidBufferHandle, NULL, NULL, NULL);
+
+    ///assert
+    ASSERT_ARE_EQUAL(BLOB_RESULT, BLOB_OK, result);
+    ASSERT_ARE_EQUAL(int, HTTP_OK, httpResponse);
 
     ///cleanup
     gballoc_free(fakeContext.fakeData);
