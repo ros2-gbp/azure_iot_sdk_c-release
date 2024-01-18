@@ -1,4 +1,4 @@
-From 65912b25bf3d2aae295a09051361f2c3733a0d99 Mon Sep 17 00:00:00 2001
+From 7dccc4c42b441e1e2926c5d3982a8663bf09f9d9 Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Wed, 17 Jan 2024 08:46:03 +0100
 Subject: [PATCH] Install ros package xml
