@@ -433,5 +433,5 @@ if (${use_installed_dependencies})
     )
 endif()
 
-# Install ros package.xml
+# Install package.xml
 install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
