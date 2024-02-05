@@ -29,9 +29,15 @@ option(use_builtin_httpapi "set use_builtin_httpapi to ON to use the built-in ht
 option(use_cppunittest "set use_cppunittest to ON to build CppUnitTest tests on Windows (default is OFF)" OFF)
 option(suppress_header_searches "do not try to find headers - used when compiler check will fail" OFF)
 option(use_custom_heap "use externally defined heap functions instead of the malloc family" OFF)
+option(no_openssl_engine "Disables the use of ENGINEs in OpenSSL" OFF)
+option(enable_ipv6 "set enable_ipv6 to ON to enable dual-ip-stack (IPv4 and IPv6) support (default is OFF for IPv4 only)" OFF)
 
 if(${use_custom_heap})
     add_definitions(-DGB_USE_CUSTOM_HEAP)
+endif()
+
+if (${enable_ipv6})
+    add_definitions(-DIPV6_ENABLED)
 endif()
 
 if(WIN32)
@@ -106,6 +112,10 @@ if(${memory_trace})
 endif()
 
 if(${use_openssl})
+    if(${no_openssl_engine})
+        add_definitions(-DOPENSSL_NO_ENGINE)
+    endif()
+
     if("${OPENSSL_ROOT_DIR}" STREQUAL "" AND NOT ("$ENV{OpenSSLDir}" STREQUAL ""))
         set(OPENSSL_ROOT_DIR $ENV{OpenSSLDir} CACHE PATH "")
     endif()
@@ -115,6 +125,14 @@ if(${use_openssl})
     if (NOT TARGET OpenSSL::SSL OR NOT TARGET OpenSSL::Crypto OR NOT ${OPENSSL_INCLUDE_DIR})
         find_package(OpenSSL REQUIRED)
     endif()
+
+    # The block below enables the v1 back-compatibility layer in OpenSSL 3,
+    # if using that version or later. For reference, please check the OpenSSL
+    # official documentation: https://www.openssl.org/docs/man3.0/man7/openssl_user_macros.html
+    if (DEFINED OPENSSL_VERSION AND (${OPENSSL_VERSION} GREATER_EQUAL 3))
+        add_definitions(-DOPENSSL_API_COMPAT=0x10101000L)
+    endif()
+
     include_directories(${OPENSSL_INCLUDE_DIR})
 endif()
 
@@ -263,6 +281,7 @@ if(${use_http})
         ./src/httpheaders.c
         ${HTTP_C_FILE}
     )
+    add_definitions(-DUSE_HTTP)
 endif()
 
 if(${use_schannel})
@@ -612,6 +631,14 @@ if(LINUX)
             link_directories(${UUID_LIBRARY_DIRS})
             set(aziotsharedutil_target_libs ${aziotsharedutil_target_libs} -L${UUID_LIBRARY_DIRS} ${UUID_LIBRARIES})
         else()
+            if (DEFINED UUID_INCLUDE_DIR)
+                include_directories(${UUID_INCLUDE_DIR})
+            endif()
+
+            if (DEFINED UUID_LIBRARY_DIRS)
+                link_directories(${UUID_LIBRARY_DIRS})
+            endif()
+
             set(aziotsharedutil_target_libs ${aziotsharedutil_target_libs} uuid)
         endif()
     endif()
