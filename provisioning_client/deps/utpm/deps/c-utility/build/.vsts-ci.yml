@@ -7,9 +7,6 @@ resources:
   - container: linux-c-ubuntu-2004
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-2004:latest
-  - container: linux-c-ubuntu-1804
-    endpoint: csdk-containers
-    image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-1804:latest
   - container: linux-c-ubuntu-clang
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-clang:latest
@@ -79,10 +76,12 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: cd .. && rd /Q /S $(Agent.BuildDirectory)\s
-    displayName: 'Cleanup'
-    condition: always()
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
 - job: windowsx64
+  variables:
+    CodeQL.Enabled: true
+    CodeQL.Language: cpp
   pool:
     name: 'sdk-c--win-vs2017'
   displayName: 'Windows x64'
@@ -113,9 +112,8 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: cd .. && rd /Q /S $(Agent.BuildDirectory)\s
-    displayName: 'Cleanup'
-    condition: always()
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
 - job: windowsdynamic
   displayName: Windows Dynamic
   pool:
@@ -143,13 +141,12 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: cd .. && rd /Q /S $(Agent.BuildDirectory)\s
-    displayName: 'Cleanup'
-    condition: always()
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
 - job: clang
   container: linux-c-ubuntu-clang
   pool:
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'Linux Ubuntu Clang'
   steps:
   - script: |
@@ -181,51 +178,10 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
-- job: ubuntu1804
-  container: linux-c-ubuntu-1804
-  pool: 
-      name: 'sdk-c--ubuntu-18'
-  displayName: 'Linux Ubuntu 18.04'
-  steps:
-  - script: |
-     if [ -f "jenkins/ubuntu_c.sh" ]
-     then
-      export OPENSSL_ia32cap=0x00000000
-      sudo chmod -R 755 .
-      sudo -E ./jenkins/ubuntu_c.sh
-     fi
-    displayName: "Build"
-  - script: |
-      cd cmake && sudo -E ../build_all/linux/run_tests.sh
-    displayName: "Run Tests"
-    env:
-      IOTHUB_CONNECTION_STRING: $(IOTHUB-CONNECTION-STRING)
-      IOTHUB_EVENTHUB_CONNECTION_STRING: $(IOTHUB-EVENTHUB-CONNECTION-STRING)
-      IOTHUB_E2E_X509_CERT_BASE64: $(IOTHUB-E2E-X509-CERT-BASE64)
-      IOTHUB_E2E_X509_PRIVATE_KEY_BASE64: $(IOTHUB-E2E-X509-PRIVATE-KEY-BASE64)
-      IOTHUB_E2E_X509_THUMBPRINT: $(IOTHUB-E2E-X509-THUMBPRINT)
-      IOTHUB_POLICY_KEY: $(IOTHUB-POLICY-KEY)
-      IOTHUB_PARTITION_COUNT: $(IOTHUB-PARTITION-COUNT)
-      STORAGE_ACCOUNT_CONNECTION_STRING: $(STORAGE-ACCOUNT-CONNECTION-STRING)
-      IOT_DPS_CONNECTION_STRING: $(IOT-DPS-CONNECTION-STRING)
-      IOT_DPS_ID_SCOPE: $(IOT-DPS-ID-SCOPE)
-      IOTHUB_CA_ROOT_CERT: $(IOTHUB-CA-ROOT-CERT)
-      IOTHUB_CA_ROOT_CERT_KEY: $(IOTHUB-CA-ROOT-CERT-KEY)
-      IOT_DPS_GLOBAL_ENDPOINT: $(IOT-DPS-GLOBAL-ENDPOINT)
-      IOTHUB_DEVICE_CONN_STRING_INVALIDCERT: $(IOTHUB-DEVICE-CONN-STRING-INVALIDCERT)
-      IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
-      DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
-      PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: ubuntu2004
   container: linux-c-ubuntu-2004
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'Linux Ubuntu 20.04'
   steps:
   - script: |
@@ -257,13 +213,10 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: ubuntu2204
   container: linux-c-ubuntu-2204
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'Linux Ubuntu 22.04'
   steps:
   - script: |
@@ -295,14 +248,11 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: linuxoptions
   displayName: 'Linux Ubuntu 20.04 with Options'
   container: linux-c-ubuntu-2004
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   steps:
   - script: |
      if [ -f "jenkins/linux_c_option_test.sh" ]
@@ -311,13 +261,10 @@ jobs:
      fi
     displayName: 'Build'
     condition: always()
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: linux_installed_deps
   container: linux-c-ubuntu-2004
   pool: 
-    name: 'sdk-c--ubuntu-18'
+    name: 'sdk-c--ubuntu-22'
   displayName: 'Linux with Installed Deps'
   steps:
   - script: |
@@ -345,13 +292,10 @@ jobs:
       IOT_DPS_INDIVIDUAL_X509_CERTIFICATE: $(IOTHUB-E2E-X509-ECC-CERT-BASE64)
       IOT_DPS_INDIVIDUAL_X509_KEY: $(IOTHUB-E2E-X509-ECC-PRIVATE-KEY-BASE64)
       IOT_DPS_INDIVIDUAL_REGISTRATION_ID: $(IOT-DPS-INDIVIDUAL-REGISTRATION-ID)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: cares
   container: linux-c-ubuntu-c-ares
   pool: 
-    name: 'sdk-c--ubuntu-18'
+    name: 'sdk-c--ubuntu-22'
   displayName: 'Linux with C-Ares'
   steps:
   - script: |
@@ -388,13 +332,10 @@ jobs:
       mergeTestResults: true
       testRunTitle: 'cares'
     condition: succeededOrFailed()
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: debian
   container: linux-c-debian
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'Linux Debian'
   steps:
   - script: |
@@ -426,13 +367,10 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: linux_mbed
   container: linux-c-ubuntu-mbed
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'mbedTLS'
   steps:
   - script: |
@@ -463,13 +401,10 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: wolfssl
   container: linux-c-ubuntu-wolfssl
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'WolfSSL'
   steps:
   - script: |
@@ -506,13 +441,10 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: bearssl
   container: linux-c-ubuntu-bearssl
   pool: 
-      name: 'sdk-c--ubuntu-18'
+      name: 'sdk-c--ubuntu-22'
   displayName: 'BearSSL'
   steps:
   - script: |
@@ -545,9 +477,6 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
 - job: OSX
   displayName: OSX
   pool:
@@ -580,8 +509,8 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
     condition: always()
 - job: xcodenative
   displayName: XCode Native
@@ -617,18 +546,26 @@ jobs:
       IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
-  - script: rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
-    condition: always()
+  - task: ComponentGovernanceComponentDetection@0
+    displayName: 'Component Detection'
 - job: raspberrypi
   displayName: Raspberry Pi
   container: raspberrypi-c-buster
   pool: 
-    name: 'sdk-c--ubuntu-18'
+    name: 'sdk-c--ubuntu-22'
   steps:
   - script: |
      chmod +x jenkins/raspberrypi_c_buster.sh
      ./jenkins/raspberrypi_c_buster.sh
     displayName: 'Build'
-  - script: sudo rm -rf $(Agent.BuildDirectory)/*
-    displayName: 'Cleanup'
+- job: DotNET
+  displayName: .NET
+  variables:
+    CodeQL.Enabled: true
+    CodeQL.Language: csharp
+  pool: 
+    vmImage: 'windows-latest'
+  steps:
+  - script: |
+     dotnet build testtools\SerialPort\SerialPort.sln
+    displayName: 'Build'
