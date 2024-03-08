@@ -1,4 +1,4 @@
-From 8deb70dea848a9cfac10ee05b62f3b6057bb645e Mon Sep 17 00:00:00 2001
+From 8266c2087b3bc5eb3de3077dab99fe17fb88916f Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Tue, 1 Feb 2022 06:59:09 +0100
 Subject: [PATCH 1/2] Install package.xml
@@ -19,5 +19,5 @@ index 427e82e..3f20fda 100644
 +# Install package.xml
 +install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
 -- 
-2.43.0
+2.43.2
 

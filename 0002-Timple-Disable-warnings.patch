@@ -1,4 +1,4 @@
-From 17eb474cb05e449961c5aea5688a95782851e015 Mon Sep 17 00:00:00 2001
+From 7581a06b1fbc4af6744b1aa8f8bfe3ed96473847 Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Fri, 19 Jan 2024 08:14:48 +0100
 Subject: [PATCH 2/2] Timple: Disable warnings
@@ -21,5 +21,5 @@ index 3f20fda..faac024 100644
  option(build_as_dynamic "build the IoT SDK libaries as dynamic"  OFF)
  # Turn on/off IoT features
 -- 
-2.43.0
+2.43.2
 
