@@ -9,9 +9,9 @@ resources:
   - container: linux-c-ubuntu-clang
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-clang:latest
-  - container: linux-c-debian
+  - container: linux-c-debian-buster
     endpoint: csdk-containers
-    image: csdkcontainerregistry.azurecr.io/linux-c-debian:latest
+    image: csdkcontainerregistry.azurecr.io/linux-c-debian-buster:latest
   - container: linux-c-ubuntu-wolfssl
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-wolfssl:latest
@@ -36,12 +36,12 @@ jobs:
     displayName: 'setup'
   - script: |
       npm install check_submodules
-      ./../../node_modules/.bin/check_submodules . master
+      node_modules/.bin/check_submodules . master
     displayName: 'build'
 - job: windowsx86
   displayName: Windows x86
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   steps:
   - script: |
      if exist jenkins\windows_c.cmd (
@@ -65,7 +65,7 @@ jobs:
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
 - job: windowsx64
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   displayName: 'Windows x64'
   steps:
   - script: |
@@ -94,7 +94,7 @@ jobs:
 - job: windowsdynamic
   displayName: Windows Dynamic
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   steps:
   - script: |
      if exist jenkins\windows_c_build_as_dynamic.cmd (
@@ -196,10 +196,10 @@ jobs:
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
 - job: debian
-  container: linux-c-debian
+  container: linux-c-debian-buster
   pool: 
     name: 'sdk-c--ubuntu-22'
-  displayName: 'Linux Debian'
+  displayName: 'Linux Debian (Buster)'
   steps:
   - script: |
      if [ -f "jenkins/debian_c.sh" ]
@@ -228,10 +228,10 @@ jobs:
       DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
       PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
 - job: linux_install_deps
-  container: linux-c-debian
+  container: linux-c-debian-buster
   pool: 
     name: 'sdk-c--ubuntu-22'
-  displayName: 'Linux Debian with Installed Deps'
+  displayName: 'Linux Debian (Buster) with Installed Deps'
   steps:
   - script: |
      if [ -f "jenkins/linux_install_deps.sh" ]
@@ -264,7 +264,7 @@ jobs:
   variables:
     CodeQL.Enabled: false
   pool:
-    name: OSX
+    vmImage: 'macOS-13'
   steps:
   - script: |
      if [ -f "jenkins/osx_gcc_openssl.sh" ]
@@ -295,7 +295,7 @@ jobs:
   variables:
     CodeQL.Enabled: false
   pool:
-    name: OSX
+    vmImage: 'macOS-13'
   steps:
   - script: |
      if [ -f "jenkins/osx_xcode_native.sh" ]
