@@ -21,9 +21,9 @@ resources:
   - container: linux-c-ubuntu-c-ares
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-c-ares:latest
-  - container: linux-c-debian
+  - container: linux-c-debian-buster
     endpoint: csdk-containers
-    image: csdkcontainerregistry.azurecr.io/linux-c-debian:latest
+    image: csdkcontainerregistry.azurecr.io/linux-c-debian-buster:latest
   - container: linux-c-ubuntu-clang
     endpoint: csdk-containers
     image: csdkcontainerregistry.azurecr.io/linux-c-ubuntu-clang:latest
@@ -35,6 +35,8 @@ resources:
     image: csdkcontainerregistry.azurecr.io/raspberrypi-c-buster:brown
 jobs:
 - job: checksubmodule
+  variables:
+    CodeQL.Enabled: false
   pool:
     vmImage: 'ubuntu-20.04'
   displayName: "Check Submodules"
@@ -50,12 +52,12 @@ jobs:
       sudo apt-get install -y nodejs
     displayName: 'Setup'
   - script: |
-      npm install check_submodules
-      ./../../node_modules/.bin/check_submodules . main
+      npm install check_submodules 
+      node_modules/.bin/check_submodules . main
     displayName: 'Check Submodules Match'
 - job: windowsx86
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   displayName: "Windows x86"
   steps:
   - script: |
@@ -92,7 +94,7 @@ jobs:
     condition: succeededOrFailed()
 - job: windowsx64debug
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   displayName: 'Windows x64 (Debug)'
   steps:
   - script: |
@@ -131,16 +133,20 @@ jobs:
       testRunTitle: 'windowsx64'
     condition: succeededOrFailed()
 - job: windowsx64release
+  timeoutInMinutes: 150
   variables:
-    CodeQL.Enabled: true
+    CodeQL.Enabled: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
     CodeQL.Language: cpp
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   displayName: 'Windows x64 (Release)'
   steps:
+  - task: CodeQL3000Init@0
   - script: |
       call jenkins\windows_c_release.cmd --platform x64
     displayName: 'Build'
+  - task: CodeQL3000Finalize@0
+    condition: always()
   - script: |
       call jenkins\windows_c_VsDevCmd.cmd x64
       cd cmake && ctest -T test --no-compress-output -C "Release" -V -j 16 --schedule-random
@@ -175,7 +181,7 @@ jobs:
     condition: succeededOrFailed()
 - job: windowsdynamic
   pool:
-    name: 'sdk-c--win-vs2017'
+    name: 'sdk-c--win-vs2022'
   displayName: "Windows Dynamic"
   steps:
   - script: |
@@ -555,10 +561,10 @@ jobs:
       testRunTitle: 'ubuntu2204dualipstack'
     condition: succeededOrFailed()
 - job: debian
-  container: linux-c-debian
+  container: linux-c-debian-Buster
   pool: 
     name: 'sdk-c--ubuntu-22'
-  displayName: 'Debian'
+  displayName: 'Debian (Buster)'
   steps:
   - script: |
       sudo ./jenkins/debian_c.sh
@@ -838,7 +844,7 @@ jobs:
   variables:
     CodeQL.Enabled: false
   pool:
-    name: OSX
+    vmImage: 'macOS-13'
   steps:
   - script: |
       ./jenkins/osx_gcc_openssl.sh
@@ -883,15 +889,16 @@ jobs:
   variables:
     CodeQL.Enabled: false
   pool:
-    name: OSX
+    vmImage: 'macOS-13'
   displayName: "Xcode Native"
   steps:
   - script: |
-      export DYLD_LIBRARY_PATH=/usr/local/Cellar/curl/7.61.0/lib
+      curl --version
+      export DYLD_LIBRARY_PATH="/usr/local/Cellar/curl/$(ls -b /usr/local/Cellar/curl | grep -e '[0-9\.]')/lib"
       ./jenkins/osx_xcode_native.sh
     displayName: 'Build'
   - script: |
-      export DYLD_LIBRARY_PATH=/usr/local/Cellar/curl/7.61.0/lib
+      export DYLD_LIBRARY_PATH="/usr/local/Cellar/curl/$(ls -b /usr/local/Cellar/curl | grep -e '[0-9\.]')/lib"
       cd cmake && ctest -T test --no-compress-output -C "Debug" -V -j 8 --schedule-random
     displayName: "Run Tests"
     env:
@@ -988,11 +995,12 @@ jobs:
 - job: DotNET
   displayName: .NET
   variables:
-    CodeQL.Enabled: true
-    CodeQL.Language: csharp
+    Codeql.Enabled: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+    Codeql.Language: csharp,python
   pool: 
     vmImage: 'windows-latest'
   steps:
+  - task: CodeQL3000Init@0
   - task: NuGetCommand@2
     inputs:
       command: 'restore'
@@ -1003,3 +1011,5 @@ jobs:
     inputs:
       command: 'build'
       projects: 'tools\traceabilitytool\traceabilitytool.sln'
+  - task: CodeQL3000Finalize@0
+    condition: always()

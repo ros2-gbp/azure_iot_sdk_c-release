@@ -13,6 +13,7 @@
 #include "azure_c_shared_utility/shared_util_options.h"
 #include "azure_c_shared_utility/azure_base64.h"
 #include "azure_c_shared_utility/buffer_.h"
+#include "azure_c_shared_utility/safe_math.h"
 
 #ifdef USE_PROV_MODULE
 #include "azure_prov_client/internal/iothub_auth_client.h"
@@ -393,6 +394,10 @@ char* IoTHubClient_Auth_Get_SasToken(IOTHUB_AUTHORIZATION_HANDLE handle, const c
             {
                 memset(&dev_auth_cred, 0, sizeof(DEVICE_AUTH_CREDENTIAL_INFO));
                 uint64_t expiry_time = sec_since_epoch + handle->token_expiry_time_sec;
+                if (expiry_time < sec_since_epoch)
+                {
+                    expiry_time = UINT64_MAX;
+                }
                 dev_auth_cred.sas_info.expiry_seconds = expiry_time;
                 dev_auth_cred.sas_info.token_scope = scope;
                 dev_auth_cred.sas_info.key_name = key_name;
@@ -455,6 +460,11 @@ char* IoTHubClient_Auth_Get_SasToken(IOTHUB_AUTHORIZATION_HANDLE handle, const c
                 else
                 {
                     uint64_t expiry_time = sec_since_epoch + handle->token_expiry_time_sec;
+                    if (expiry_time < sec_since_epoch)
+                    {
+                        expiry_time = UINT64_MAX;
+                    }
+
                     if ( (sas_token = SASToken_CreateString(handle->device_key, scope, key_name, expiry_time)) == NULL)
                     {
                         LogError("Failed creating sas_token");
@@ -563,9 +573,12 @@ static char* read_ca_certificate_from_file(const char* certificate_file_name)
         {
             rewind(file_stream);
 
-            if ((result = calloc(1, file_size + 1)) == NULL)
+            size_t calloc_size = safe_add_size_t(file_size, 1);
+            if (calloc_size == SIZE_MAX ||
+                (result = calloc(1, calloc_size)) == NULL)
             {
-                LogError("Cannot allocate %lu bytes", (unsigned long)file_size);
+                LogError("Cannot allocate %zu bytes", calloc_size);
+                result = NULL;
             }
             else if ((fread(result, 1, file_size, file_stream) == 0) || (ferror(file_stream) != 0))
             {
