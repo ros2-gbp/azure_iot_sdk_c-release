@@ -11,6 +11,7 @@
 #include "azure_c_shared_utility/xlogging.h"
 #include "azure_c_shared_utility/uniqueid.h"
 #include "azure_c_shared_utility/singlylinkedlist.h"
+#include "azure_c_shared_utility/safe_math.h"
 #include "azure_uamqp_c/link.h"
 #include "azure_uamqp_c/messaging.h"
 #include "azure_uamqp_c/message_sender.h"
@@ -269,14 +270,14 @@ static STRING_HANDLE create_link_name(const char* prefix, const char* infix)
     char* unique_id;
     STRING_HANDLE tag = NULL;
 
-    if ((unique_id = (char*)malloc(sizeof(char) * UNIQUE_ID_BUFFER_SIZE + 1)) == NULL)
+    size_t calloc_size = safe_multiply_size_t(sizeof(char), safe_add_size_t(UNIQUE_ID_BUFFER_SIZE, 1));
+    if (calloc_size == SIZE_MAX ||
+        (unique_id = (char*)calloc(1, calloc_size)) == NULL)
     {
-        LogError("Failed generating an unique tag (malloc failed)");
+        LogError("Failed generating an unique tag (calloc failed), size:%zu", calloc_size);
     }
     else
     {
-        memset(unique_id, 0, sizeof(char) * UNIQUE_ID_BUFFER_SIZE + 1);
-
         if (UniqueId_Generate(unique_id, UNIQUE_ID_BUFFER_SIZE) != UNIQUEID_OK)
         {
             LogError("Failed generating an unique tag (UniqueId_Generate failed)");
@@ -982,39 +983,45 @@ static void internal_on_event_send_complete_callback(void* context, MESSAGE_SEND
                 else
                 {
                     bool isResourceLimitExceeded = false;
-                    uint32_t item_count;
-                    int ret = amqpvalue_get_list_item_count(delivery_state, &item_count);
-                    for (uint32_t i = 0; !isResourceLimitExceeded && ret == 0 && i < item_count; i++)
+
+                    // To avoid error message from amqpvalue_get_list_item_count in case
+                    // delivery_state is NULL.
+                    if (delivery_state != NULL)
                     {
-                        AMQP_VALUE delivery_state_item = amqpvalue_get_list_item(delivery_state, i);
-                        if (delivery_state_item != NULL)
+                        uint32_t item_count;
+                        int ret = amqpvalue_get_list_item_count(delivery_state, &item_count);
+                        for (uint32_t i = 0; !isResourceLimitExceeded && ret == 0 && i < item_count; i++)
                         {
-                            AMQP_VALUE item_properties = amqpvalue_get_inplace_described_value(delivery_state_item);
-                            if (item_properties != NULL)
+                            AMQP_VALUE delivery_state_item = amqpvalue_get_list_item(delivery_state, i);
+                            if (delivery_state_item != NULL)
                             {
-                                uint32_t item_properties_count = 0;
-                                ret = amqpvalue_get_list_item_count(item_properties, &item_properties_count);
-                                for (uint32_t t = 0; !isResourceLimitExceeded && ret == 0 && t < item_properties_count; t++)
+                                AMQP_VALUE item_properties = amqpvalue_get_inplace_described_value(delivery_state_item);
+                                if (item_properties != NULL)
                                 {
-                                    AMQP_VALUE item_property = amqpvalue_get_list_item(item_properties, t);
-                                    if (item_property != NULL)
+                                    uint32_t item_properties_count = 0;
+                                    ret = amqpvalue_get_list_item_count(item_properties, &item_properties_count);
+                                    for (uint32_t t = 0; !isResourceLimitExceeded && ret == 0 && t < item_properties_count; t++)
                                     {
-                                        const char* symbol_value;
-                                        int ret_sym = amqpvalue_get_symbol(item_property, &symbol_value);
-                                        if (ret_sym == 0)
+                                        AMQP_VALUE item_property = amqpvalue_get_list_item(item_properties, t);
+                                        if (item_property != NULL)
                                         {
-                                            size_t proplen = strlen(symbol_value);
-                                            proplen = proplen < sizeof(IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED) ? proplen : sizeof(IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED);
-                                            if (strncmp(symbol_value, IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED, proplen) == 0)
+                                            const char* symbol_value;
+                                            int ret_sym = amqpvalue_get_symbol(item_property, &symbol_value);
+                                            if (ret_sym == 0)
                                             {
-                                                isResourceLimitExceeded = true;
+                                                size_t proplen = strlen(symbol_value);
+                                                proplen = proplen < sizeof(IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED) ? proplen : sizeof(IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED);
+                                                if (strncmp(symbol_value, IOTHUB_MESSAGE_PROPERTY_RESOURCE_LIMIT_EXCEEDED, proplen) == 0)
+                                                {
+                                                    isResourceLimitExceeded = true;
+                                                }
                                             }
+                                            amqpvalue_destroy(item_property);
                                         }
-                                        amqpvalue_destroy(item_property);
                                     }
                                 }
+                                amqpvalue_destroy(delivery_state_item);
                             }
-                            amqpvalue_destroy(delivery_state_item);
                         }
                     }
 
