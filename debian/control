@@ -1,0 +1,12 @@
+Source: ros-iron-azure-iot-sdk-c
+Section: misc
+Priority: optional
+Maintainer: Tim Clephas <tim.clephas@nobleo.nl>
+Build-Depends: debhelper (>= 9.0.0), cmake, curl, libcurl4-openssl-dev, libssl-dev, uuid-dev, ros-iron-ros-workspace
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-iron-azure-iot-sdk-c
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, curl, libcurl4-openssl-dev, libssl-dev, uuid-dev, ros-iron-ros-workspace
+Description: Azure IoT C SDKs and Libraries
