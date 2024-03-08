@@ -21,6 +21,7 @@
 #include "azure_c_shared_utility/shared_util_options.h"
 #include "azure_c_shared_utility/gballoc.h"
 #include "azure_c_shared_utility/const_defines.h"
+#include "azure_c_shared_utility/safe_math.h"
 
 typedef enum TLSIO_STATE_TAG
 {
@@ -607,10 +608,11 @@ static int openssl_static_locks_install(void)
     }
     else
     {
-        openssl_locks = malloc(CRYPTO_num_locks() * sizeof(LOCK_HANDLE));
-        if (openssl_locks == NULL)
+        size_t malloc_size = safe_multiply_size_t(CRYPTO_num_locks(), sizeof(LOCK_HANDLE));
+        if (malloc_size == SIZE_MAX ||
+            (openssl_locks = malloc(malloc_size)) == NULL)
         {
-            LogError("Failed to allocate locks");
+            LogError("Failed to allocate locks, size:%zu", malloc_size);
             result = MU_FAILURE;
         }
         else
@@ -1060,7 +1062,7 @@ static int create_openssl_instance(TLS_IO_INSTANCE* tlsInstance)
 
     const SSL_METHOD* method = NULL;
 
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || (OPENSSL_VERSION_NUMBER >= 0x20000000L)
+#if (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
     if (tlsInstance->tls_version == VERSION_1_2)
     {
         method = TLSv1_2_method();
@@ -1262,7 +1264,7 @@ void tlsio_openssl_deinit(void)
 
 #if   (OPENSSL_VERSION_NUMBER < 0x10000000L)
     ERR_remove_state(0);
-#elif (OPENSSL_VERSION_NUMBER < 0x10100000L) || (OPENSSL_VERSION_NUMBER >= 0x20000000L)
+#elif (OPENSSL_VERSION_NUMBER < 0x10100000L) || defined(LIBRESSL_VERSION_NUMBER)
     ERR_remove_thread_state(NULL);
 #endif
 #if  (OPENSSL_VERSION_NUMBER >= 0x10002000L) &&  (OPENSSL_VERSION_NUMBER < 0x10010000L) && (SSL_COMP_free_compression_methods)
@@ -1390,7 +1392,9 @@ void tlsio_openssl_destroy(CONCRETE_IO_HANDLE tls_io)
             tls_io_instance->cipher_list = NULL;
         }
         free((void*)tls_io_instance->x509_certificate);
+        tls_io_instance->x509_certificate = NULL;
         free((void*)tls_io_instance->x509_private_key);
+        tls_io_instance->x509_private_key = NULL;
         close_openssl_instance(tls_io_instance);
         if (tls_io_instance->underlying_io != NULL)
         {
@@ -1398,6 +1402,7 @@ void tlsio_openssl_destroy(CONCRETE_IO_HANDLE tls_io)
             tls_io_instance->underlying_io = NULL;
         }
         free(tls_io_instance->hostname);
+        tls_io_instance->hostname = NULL;
         if (tls_io_instance->engine_id != NULL)
         {
             free(tls_io_instance->engine_id);
@@ -1654,9 +1659,11 @@ int tlsio_openssl_setoption(CONCRETE_IO_HANDLE tls_io, const char* optionName, c
 
             // Store the certificate
             len = strlen(cert);
-            tls_io_instance->certificate = malloc(len + 1);
-            if (tls_io_instance->certificate == NULL)
+            size_t malloc_size = safe_add_size_t(len, 1);
+            if (malloc_size == SIZE_MAX ||
+                (tls_io_instance->certificate = malloc(malloc_size)) == NULL)
             {
+                LogError("malloc failure, size:%zu", malloc_size);
                 result = MU_FAILURE;
             }
             else

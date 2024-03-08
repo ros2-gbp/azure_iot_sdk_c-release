@@ -54,7 +54,7 @@ if(WIN32)
 
 else()
     option(use_schannel "set use_schannel to ON if schannel is to be used, set to OFF to not use schannel" OFF)
-    if(MACOSX)
+    if(DEFINED MACOSX)
         option(use_openssl "set use_openssl to ON if openssl is to be used, set to OFF to not use openssl" OFF)
         option(use_socketio "set use_socketio to ON if socketio is to be included in the library, set to OFF if a different implementation will be provided" OFF)
     else()
@@ -71,7 +71,7 @@ option(no_logging "disable logging (default is OFF)" OFF)
 
 # The options setting for use_socketio is not reliable. If openssl is used, make sure it's on,
 # and if apple tls is used then use_socketio must be off.
-if (MACOSX)
+if (DEFINED MACOSX)
     if (${use_openssl})
         set(use_socketio ON)
     else()
@@ -232,7 +232,6 @@ set(source_c_files
     ./src/gbnetwork.c
     ./src/gb_stdio.c
     ./src/gb_time.c
-    ./src/gb_rand.c
     ./src/hmac.c
     ./src/hmacsha256.c
     ./src/xio.c
@@ -257,6 +256,7 @@ set(source_c_files
     ${LOCK_C_FILE}
     ${SRW_LOCK_C_FILE}
     ${TIMER_C_FILE}
+    ${RANDOM_C_FILE}
     ${STRING_UTILS_C_FILE}
     ${PLATFORM_C_FILE}
     ${SOCKETIO_C_FILE}
@@ -356,7 +356,6 @@ set(source_h_files
     ./inc/azure_c_shared_utility/gbnetwork.h
     ./inc/azure_c_shared_utility/gb_stdio.h
     ./inc/azure_c_shared_utility/gb_time.h
-    ./inc/azure_c_shared_utility/gb_rand.h
     ./inc/azure_c_shared_utility/hmac.h
     ./inc/azure_c_shared_utility/hmacsha256.h
     ./inc/azure_c_shared_utility/http_proxy_io.h
@@ -472,7 +471,7 @@ SOURCE_GROUP(devdoc FILES ${aziotsharedutil_md_files})
 
 # Add ignore deprecated functions so we may use 1.1.1 APIs
 # in OpenSSL 3
-if(LINUX)
+if(DEFINED LINUX OR DEFINED MACOSX)
   set_property(
     SOURCE
       ${CMAKE_CURRENT_LIST_DIR}/adapters/tlsio_openssl.c
