@@ -1,0 +1,23 @@
+From 3abdecdd449dddb7b2344a5dc443cfdc026996e2 Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Tue, 1 Feb 2022 06:59:09 +0100
+Subject: [PATCH 1/2] Install package.xml
+
+---
+ CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 427e82e..3f20fda 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -432,3 +432,6 @@ if (${use_installed_dependencies})
+             ${package_location}
+     )
+ endif()
++
++# Install package.xml
++install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
+-- 
+2.43.2
+
