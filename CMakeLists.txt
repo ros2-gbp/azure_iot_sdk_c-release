@@ -56,7 +56,7 @@ option(dont_use_uploadtoblob "set dont_use_uploadtoblob to ON if the functionali
 # Compile options
 option(no_logging "disable logging" OFF)
 option(use_installed_dependencies "set use_installed_dependencies to ON to use installed packages instead of building dependencies from submodules" OFF)
-option(warnings_as_errors  "enable strict compiler warnings-as-errors" OFF)
+option(warnings_as_errors  "enable strict compiler warnings-as-errors" ON)
 option(strict_prototypes  "enable GCC strict-prototypes compiler option. This is not supported with test code enabled." OFF)
 option(build_as_dynamic "build the IoT SDK libaries as dynamic"  OFF)
 # Turn on/off IoT features
@@ -432,6 +432,3 @@ if (${use_installed_dependencies})
             ${package_location}
     )
 endif()
-
-# Install package.xml
-install(FILES package.xml DESTINATION share/azure-iot-sdk-c)
