@@ -1,3 +1,26 @@
+## azure_iot_sdk_c (jazzy) - 1.13.0-2
+
+The packages in the `azure_iot_sdk_c` repository were released into the `jazzy` distro by running `/usr/bin/bloom-release azure_iot_sdk_c --ros-distro jazzy` on `Thu, 30 May 2024 12:34:12 -0000`
+
+The `azure_iot_sdk_c` package was released.
+
+Version of package(s) in repository `azure_iot_sdk_c`:
+
+- upstream repository: https://github.com/Azure/azure-iot-sdk-c.git
+- release repository: unknown
+- rosdistro version: `null`
+- old version: `1.13.0-1`
+- new version: `1.13.0-2`
+
+Versions of tools used:
+
+- bloom version: `0.12.0`
+- catkin_pkg version: `1.0.0`
+- rosdep version: `0.24.0`
+- rosdistro version: `0.9.1`
+- vcstools version: `0.1.42`
+
+
 ## azure_iot_sdk_c (jazzy) - 1.13.0-1
 
 The packages in the `azure_iot_sdk_c` repository were released into the `jazzy` distro by running `/usr/bin/bloom-release azure_iot_sdk_c --ros-distro jazzy` on `Mon, 29 Apr 2024 21:03:51 -0000`
