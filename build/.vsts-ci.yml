@@ -56,6 +56,7 @@ jobs:
       node_modules/.bin/check_submodules . main
     displayName: 'Check Submodules Match'
 - job: windowsx86
+  timeoutInMinutes: 190
   pool:
     name: 'sdk-c--win-vs2022'
   displayName: "Windows x86"
@@ -93,6 +94,7 @@ jobs:
       testRunTitle: 'windowsx86'
     condition: succeededOrFailed()
 - job: windowsx64debug
+  timeoutInMinutes: 190
   pool:
     name: 'sdk-c--win-vs2022'
   displayName: 'Windows x64 (Debug)'
@@ -133,7 +135,7 @@ jobs:
       testRunTitle: 'windowsx64'
     condition: succeededOrFailed()
 - job: windowsx64release
-  timeoutInMinutes: 150
+  timeoutInMinutes: 190
   variables:
     CodeQL.Enabled: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
     CodeQL.Language: cpp
@@ -180,6 +182,7 @@ jobs:
       testRunTitle: 'windowsx64release'
     condition: succeededOrFailed()
 - job: windowsdynamic
+  timeoutInMinutes: 190
   pool:
     name: 'sdk-c--win-vs2022'
   displayName: "Windows Dynamic"
@@ -217,6 +220,7 @@ jobs:
     displayName: 'Build'
     condition: always()
 - job: clang
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-clang
   pool: 
     name: 'sdk-c--ubuntu-22'
@@ -259,6 +263,7 @@ jobs:
       testRunTitle: 'clang'
     condition: succeededOrFailed()
 - job: clang_release
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-clang
   pool: 
     name: 'sdk-c--ubuntu-22'
@@ -301,6 +306,7 @@ jobs:
       testRunTitle: 'clang_release'
     condition: succeededOrFailed()
 - job: ubuntu2004debug
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2004
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -343,6 +349,7 @@ jobs:
       testRunTitle: 'ubuntu2004debug'
     condition: succeededOrFailed()
 - job: ubuntu2004release
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2004
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -384,7 +391,53 @@ jobs:
       mergeTestResults: true
       testRunTitle: 'ubuntu2004release'
     condition: succeededOrFailed()
+- job: ubuntu2204arm
+  pool: 
+    name: 'sdk-c--ubuntu-22-arm'
+  displayName: 'Ubuntu 22.04 (ARM)'
+  steps:
+  - script: |
+      sudo nproc --all
+      sudo apt-get update && apt-get upgrade -y
+      sudo apt-get install -y git cmake build-essential curl libcurl4-openssl-dev libssl-dev uuid-dev ca-certificates
+      mkdir cmake
+      cd cmake
+      sudo cmake '-DcompileOption_C:STRING= ' -DCMAKE_BUILD_TYPE=Debug -Drun_e2e_tests:BOOL=OFF -Drun_sfc_tests:BOOL=OFF -Drun_longhaul_tests=OFF -Duse_amqp:BOOL=ON -Duse_http:BOOL=ON -Duse_mqtt:BOOL=ON -Ddont_use_uploadtoblob:BOOL=OFF -Drun_unittests:BOOL=ON -Dno_logging:BOOL=OFF -Duse_prov_client:BOOL=ON -Duse_tpm_simulator:BOOL=OFF -Duse_edge_modules=ON -Dhsm_type_riot=OFF -Dhsm_type_x509=ON -Dhsm_type_symm_key=ON -Dhsm_type_sastoken=ON -Denable_ipv6=OFF ..
+      sudo make -j8 
+    displayName: 'Build'
+  - script: |
+      cd cmake && sudo ctest -T test --no-compress-output -V
+    displayName: "Run Tests"
+    env:
+      IOTHUB_CONNECTION_STRING: $(IOTHUB-CONNECTION-STRING)
+      IOTHUB_EVENTHUB_CONNECTION_STRING: $(IOTHUB-EVENTHUB-CONNECTION-STRING)
+      IOTHUB_E2E_X509_CERT_BASE64: $(IOTHUB-E2E-X509-CERT-BASE64)
+      IOTHUB_E2E_X509_PRIVATE_KEY_BASE64: $(IOTHUB-E2E-X509-PRIVATE-KEY-BASE64)
+      IOTHUB_E2E_X509_THUMBPRINT: $(IOTHUB-E2E-X509-THUMBPRINT)
+      IOTHUB_POLICY_KEY: $(IOTHUB-POLICY-KEY)
+      STORAGE_ACCOUNT_CONNECTION_STRING: $(STORAGE-ACCOUNT-CONNECTION-STRING)
+      IOT_DPS_CONNECTION_STRING: $(IOT-DPS-CONNECTION-STRING)
+      IOT_DPS_ID_SCOPE: $(IOT-DPS-ID-SCOPE)
+      IOTHUB_CA_ROOT_CERT: $(IOTHUB-CA-ROOT-CERT)
+      IOTHUB_CA_ROOT_CERT_KEY: $(IOTHUB-CA-ROOT-CERT-KEY)
+      IOT_DPS_GLOBAL_ENDPOINT: $(IOT-DPS-GLOBAL-ENDPOINT)
+      IOTHUB_DEVICE_CONN_STRING_INVALIDCERT: $(IOTHUB-DEVICE-CONN-STRING-INVALIDCERT)
+      IOTHUB_CONN_STRING_INVALIDCERT: $(IOTHUB-CONN-STRING-INVALIDCERT)
+      DPS_GLOBALDEVICEENDPOINT_INVALIDCERT: $(DPS-GLOBALDEVICEENDPOINT-INVALIDCERT)
+      PROVISIONING_CONNECTION_STRING_INVALIDCERT: $(PROVISIONING-CONNECTION-STRING-INVALIDCERT)
+      IOT_DPS_INDIVIDUAL_X509_CERTIFICATE: $(IOTHUB-E2E-X509-ECC-CERT-BASE64)
+      IOT_DPS_INDIVIDUAL_X509_KEY: $(IOTHUB-E2E-X509-ECC-PRIVATE-KEY-BASE64)
+      IOT_DPS_INDIVIDUAL_REGISTRATION_ID: $(IOT-DPS-INDIVIDUAL-REGISTRATION-ID)
+  - task: PublishTestResults@2
+    displayName: 'Publish Debian Results'
+    inputs:
+      testRunner: CTest
+      testResultsFiles: '**/Test.xml'
+      mergeTestResults: true
+      testRunTitle: 'debian'
+    condition: succeededOrFailed()
 - job: ubuntu2204build
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2204
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -431,6 +484,7 @@ jobs:
       testRunTitle: 'ubuntu2004debug'
     condition: succeededOrFailed()
 - job: ubuntuRIOT
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2004
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -473,6 +527,7 @@ jobs:
       testRunTitle: 'ubuntuRIOT'
     condition: succeededOrFailed()
 - job: ubuntu2004dualipstack
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2004
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -515,6 +570,7 @@ jobs:
       testRunTitle: 'ubuntu2004dualipstack'
     condition: succeededOrFailed()
 - job: ubuntu2204dualipstack
+  timeoutInMinutes: 190
   container: linux-c-ubuntu-2204
   pool:
     name: 'sdk-c--ubuntu-22'
@@ -525,7 +581,7 @@ jobs:
       gcc --version
       openssl version
       curl --version
-      sudo -E env PATH="$PATH" ./build_all/linux/build.sh --run-unittests --run-e2e-tests --provisioning --use-hsmsymmkey --use-hsmsas --use-hsmx509 --use-edge-modules --use-ipv6-dualstack --config Debug
+      sudo -E env PATH="$PATH" ./build_all/linux/build.sh --run-unittests --run-e2e-tests --no_uploadtoblob --provisioning --use-hsmsymmkey --use-hsmsas --use-hsmx509 --use-edge-modules --use-ipv6-dualstack --config Debug
     displayName: 'Build'
   - script: |
       export OPENSSL_ia32cap=0x00000000
