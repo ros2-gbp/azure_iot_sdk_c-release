@@ -1,1 +1,1 @@
-{"base": "ec3dc2f", "parent": "debian/rolling/azure_iot_sdk_c", "previous": "f0718b3", "trim": "", "trimbase": ""}
+{"base": "2755ce64752f", "parent": "debian/kilted/azure_iot_sdk_c", "previous": "51bc303f1081", "trim": "", "trimbase": ""}
