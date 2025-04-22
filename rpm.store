@@ -1,1 +1,1 @@
-{"base": "6fb0309", "parent": "rpm/rolling/azure_iot_sdk_c", "previous": "f17619d", "trim": "", "trimbase": ""}
+{"base": "c8036b201ae6", "parent": "rpm/kilted/azure_iot_sdk_c", "previous": "2ae214a3972f", "trim": "", "trimbase": ""}
