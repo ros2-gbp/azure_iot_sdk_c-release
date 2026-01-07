@@ -1,7 +1,7 @@
-From 01bca2dad552fdadae849848a5a41275c9c2abed Mon Sep 17 00:00:00 2001
+From 74b3bc01dd68a20749d4c7180e71bd2470cc9220 Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Mon, 5 Jan 2026 10:18:47 +0100
-Subject: [PATCH] Disable compile errors on RHEL
+Subject: [PATCH 1/2] Disable compile errors on RHEL
 
 ---
  CMakeLists.txt | 2 +-
