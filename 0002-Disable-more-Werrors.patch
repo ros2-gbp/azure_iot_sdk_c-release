@@ -1,7 +1,7 @@
-From b584be925c19d0622a7c363f2a812b3b90360ef7 Mon Sep 17 00:00:00 2001
+From 547dd08ac708a6a532120b9d0f5e8a628d593405 Mon Sep 17 00:00:00 2001
 From: Tim Clephas <tim.clephas@nobleo.nl>
 Date: Wed, 7 Jan 2026 08:36:47 +0100
-Subject: [PATCH 2/2] Disable more Werrors
+Subject: [PATCH 2/3] Disable more Werrors
 
 ---
  c-utility/configs/azure_iot_build_rules.cmake | 5 +++--
