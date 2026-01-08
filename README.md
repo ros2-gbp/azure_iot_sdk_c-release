@@ -1,3 +1,26 @@
+## azure_iot_sdk_c (rolling) - 1.14.0-4
+
+The packages in the `azure_iot_sdk_c` repository were released into the `rolling` distro by running `/usr/bin/bloom-release --rosdistro rolling azure_iot_sdk_c -y` on `Thu, 08 Jan 2026 07:49:12 -0000`
+
+The `azure_iot_sdk_c` package was released.
+
+Version of package(s) in repository `azure_iot_sdk_c`:
+
+- upstream repository: https://github.com/Azure/azure-iot-sdk-c.git
+- release repository: https://github.com/ros2-gbp/azure_iot_sdk_c-release.git
+- rosdistro version: `1.14.0-3`
+- old version: `1.14.0-3`
+- new version: `1.14.0-4`
+
+Versions of tools used:
+
+- bloom version: `0.13.0`
+- catkin_pkg version: `1.1.0`
+- rosdep version: `0.26.0`
+- rosdistro version: `1.0.1`
+- vcstools version: `0.1.42`
+
+
 ## azure_iot_sdk_c (rolling) - 1.14.0-3
 
 The packages in the `azure_iot_sdk_c` repository were released into the `rolling` distro by running `/usr/bin/bloom-release --rosdistro rolling azure_iot_sdk_c` on `Wed, 07 Jan 2026 07:49:21 -0000`
