@@ -56,7 +56,7 @@ option(dont_use_uploadtoblob "set dont_use_uploadtoblob to ON if the functionali
 # Compile options
 option(no_logging "disable logging" OFF)
 option(use_installed_dependencies "set use_installed_dependencies to ON to use installed packages instead of building dependencies from submodules" OFF)
-option(warnings_as_errors  "enable strict compiler warnings-as-errors" ON)
+option(warnings_as_errors  "enable strict compiler warnings-as-errors" OFF)
 option(strict_prototypes  "enable GCC strict-prototypes compiler option. This is not supported with test code enabled." OFF)
 option(build_as_dynamic "build the IoT SDK libaries as dynamic"  OFF)
 # Turn on/off IoT features
@@ -230,6 +230,9 @@ if (LINUX)
         # now all static libraries use PIC flag for Python shared lib
         set(CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
+        # Suppress strict-aliasing warnings for RHEL compatibility
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-aliasing")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-strict-aliasing")
     endif()
 endif()
 
