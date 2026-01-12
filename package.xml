@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format2.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>azure_iot_sdk_c</name>
+  <version>1.14.0</version>
+  <description>Azure IoT C SDKs and Libraries</description>
+
+  <maintainer email="tim.clephas@nobleo.nl">Tim Clephas</maintainer><!-- ROS Release -->
+  <license>MIT</license>
+
+  <buildtool_depend>cmake</buildtool_depend>
+  <depend>curl</depend>
+  <depend>libssl-dev</depend>
+  <depend>uuid</depend>
+
+  <export>
+    <build_type>cmake</build_type>
+  </export>
+</package>
