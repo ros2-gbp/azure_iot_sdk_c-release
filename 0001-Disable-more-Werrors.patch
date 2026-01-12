@@ -1,0 +1,28 @@
+From f8bddf1eb723b65adc8d3882824df0d2158b3df6 Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Wed, 7 Jan 2026 08:36:47 +0100
+Subject: [PATCH 1/2] Disable more Werrors
+
+---
+ c-utility/configs/azure_iot_build_rules.cmake | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/c-utility/configs/azure_iot_build_rules.cmake b/c-utility/configs/azure_iot_build_rules.cmake
+index 655b7f0..87a0b7b 100644
+--- a/c-utility/configs/azure_iot_build_rules.cmake
++++ b/c-utility/configs/azure_iot_build_rules.cmake
+@@ -71,8 +71,9 @@ if(MSVC)
+       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
+ elseif(UNIX) #LINUX OR APPLE
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
++    # Disabled -Werror for RHEL compatibility
++    # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
++    # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+     if(NOT (IN_OPENWRT OR APPLE))
+         # _XOPEN_SOURCE=500 is required for glibc to expose random and srandom.
+         set (CMAKE_C_FLAGS "-D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=500 ${CMAKE_C_FLAGS}")
+-- 
+2.43.0
+

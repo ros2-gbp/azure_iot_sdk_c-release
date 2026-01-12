@@ -1,0 +1,26 @@
+From c529b2c6fedfea0445d6cbde57e882527380a5de Mon Sep 17 00:00:00 2001
+From: Tim Clephas <tim.clephas@nobleo.nl>
+Date: Wed, 7 Jan 2026 15:20:56 +0100
+Subject: [PATCH 2/2] Explicitly -Wno-strict-aliasing
+
+---
+ CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c64ca05..55d3d11 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -230,6 +230,9 @@ if (LINUX)
+         # now all static libraries use PIC flag for Python shared lib
+         set(CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
+         set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
++        # Suppress strict-aliasing warnings for RHEL compatibility
++        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-aliasing")
++        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-strict-aliasing")
+     endif()
+ endif()
+ 
+-- 
+2.43.0
+
