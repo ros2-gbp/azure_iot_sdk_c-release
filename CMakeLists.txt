@@ -230,9 +230,6 @@ if (LINUX)
         # now all static libraries use PIC flag for Python shared lib
         set(CMAKE_C_FLAGS "-fPIC ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-fPIC ${CMAKE_CXX_FLAGS}")
-        # Suppress strict-aliasing warnings for RHEL compatibility
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-strict-aliasing")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-strict-aliasing")
     endif()
 endif()
 
