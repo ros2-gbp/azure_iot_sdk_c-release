@@ -184,4 +184,5 @@ tracks:
     ros_distro: rolling
     vcs_type: git
     vcs_uri: https://github.com/Azure/azure-iot-sdk-c.git
-    version: :{ask}
+    version: 1.14.0
+    version_saved: :{ask}
